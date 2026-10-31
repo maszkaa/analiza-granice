@@ -15,7 +15,7 @@ function typeset(root) {
 }
 
 const GOOD_A = 'rgba(26,155,91,.16)';
-const ACC_A = 'rgba(79,70,229,.13)';
+const ACC_A = 'rgba(47,91,216,.13)';
 
 // ───────────────────────── 1. ε–N dla ciągu ─────────────────────────
 Widgets.epsN = (el) => {
@@ -368,7 +368,7 @@ Widgets.sinGeo = (el) => {
       g.beginPath(); g.moveTo(cx, cy); g.lineTo(X(1), Y(0)); g.lineTo(X(1), Y(ta)); g.closePath();
       g.fillStyle = 'rgba(194,122,6,.14)'; g.fill(); g.strokeStyle = c.warn; g.lineWidth = 2; g.stroke();
       g.beginPath(); g.moveTo(cx, cy); g.lineTo(X(1), Y(0)); g.arc(cx, cy, R, 0, -a, true); g.closePath();
-      g.fillStyle = 'rgba(79,70,229,.22)'; g.fill(); g.strokeStyle = c.accent; g.stroke();
+      g.fillStyle = 'rgba(47,91,216,.22)'; g.fill(); g.strokeStyle = c.accent; g.stroke();
       g.beginPath(); g.moveTo(cx, cy); g.lineTo(X(ca), Y(0)); g.lineTo(X(ca), Y(sa)); g.closePath();
       g.fillStyle = 'rgba(26,155,91,.35)'; g.fill(); g.strokeStyle = c.good; g.stroke();
       g.beginPath(); g.arc(cx, cy, R, -Math.PI / 2, 0); g.strokeStyle = c.muted; g.lineWidth = 1.4; g.stroke();

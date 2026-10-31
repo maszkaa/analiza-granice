@@ -327,7 +327,7 @@
   }
 
   // ───────── mapy myśli ─────────
-  const PAL = ['#4f46e5', '#0e9f9a', '#e0457b', '#c27a06', '#7a3fd0', '#1a9b5b', '#2b7fd9', '#d6403f'];
+  const PAL = ['#2f5bd8', '#0e9f9a', '#e0457b', '#c27a06', '#7a3fd0', '#1a9b5b', '#2b7fd9', '#d6403f'];
   const mm = { id: 'big', secret: false, sel: null };
   function mmNode(map, path) {
     let n = map.root;
