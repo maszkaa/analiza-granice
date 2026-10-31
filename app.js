@@ -369,6 +369,19 @@
     }));
   }
 
+  // ───────── motyw ─────────
+  const THEMES = { light: '☀️ Biały', pink: '🌸 Różowy', dark: '🌙 Ciemny' };
+  const applyTheme = (t) => { document.documentElement.dataset.theme = t; window.dispatchEvent(new Event('resize')); };
+  let theme = 'light';
+  try { theme = localStorage.getItem('analiza-theme') || 'light'; } catch (e) { /* bez zapisu */ }
+  if (!THEMES[theme]) theme = 'light';
+  document.documentElement.dataset.theme = theme;
+  const tsel = document.createElement('select');
+  tsel.className = 'theme-sel'; tsel.setAttribute('aria-label', 'Motyw');
+  tsel.innerHTML = Object.entries(THEMES).map(([k, v]) => `<option value="${k}"${k === theme ? ' selected' : ''}>${v}</option>`).join('');
+  tsel.addEventListener('change', () => { try { localStorage.setItem('analiza-theme', tsel.value); } catch (e) { /* j.w. */ } applyTheme(tsel.value); });
+  $('.top-right').prepend(tsel);
+
   // ───────── router ─────────
   function route() {
     clearRedraws();
