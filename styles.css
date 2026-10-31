@@ -235,3 +235,5 @@ table.t td:first-child, table.t th:first-child { text-align: left; }
   .cheat .row { grid-template-columns: 1fr; }
   input[type=range] { width: 130px; }
 }
+.course-sw { display: flex; gap: 6px; padding: 4px 6px 12px; }
+.course-sw .chip { flex: 1; justify-content: center; font-weight: 600; }

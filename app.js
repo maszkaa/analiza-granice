@@ -7,11 +7,24 @@
   // ───────── postęp ─────────
   const Store = {
     key: 'analiza-granice-v1',
-    data: { done: {}, q: {}, c: {}, kol: '2026-11-12' },
+    data: { done: {}, q: {}, c: {}, kol: '2026-11-12', kolA: '2026-11-03', course: 'analiza' },
     load() { try { const r = localStorage.getItem(this.key); if (r) Object.assign(this.data, JSON.parse(r)); } catch (e) { /* tryb prywatny — działamy bez zapisu */ } },
     save() { try { localStorage.setItem(this.key, JSON.stringify(this.data)); } catch (e) { /* j.w. */ } },
   };
   Store.load();
+
+  // dwa osobne kursy: każdy ma własne lekcje, quiz, fiszki, ściągawkę i termin
+  const COURSES = {
+    analiza: { name: 'Analiza', icon: '📈', parts: [0, 1, 2, 3], topics: ['Ciągi', 'Granice funkcji', 'Ciągłość'], h1: 'Granice i ciągłość', lead: 'Twoje notatki z wykładu (40 stron) jako kurs: wyjaśnienia, interaktywne wykresy, quiz i fiszki.', dateKey: 'kol', dateLbl: 'Kolokwium (z notatek)' },
+    algebra: { name: 'Algebra', icon: '🧮', parts: [4], topics: ['Logika i zbiory', 'Kresy zbiorów', 'Wyrażenia algebraiczne'], h1: 'Logika, zbiory, kresy, wyrażenia', lead: 'Materiały na kartkówkę: logika, zbiory, kresy zbiorów i wyrażenia algebraiczne — z rozpisanymi przykładami, quizem i fiszkami.', dateKey: 'kolA', dateLbl: 'Kartkówka' },
+  };
+  const course = () => COURSES[Store.data.course] || COURSES.analiza;
+  const cLessons = () => LESSONS.filter((l) => course().parts.includes(l.part));
+  const cTopics = () => course().topics;
+  const cQuestions = () => QUESTIONS.filter((q) => cTopics().includes(q.topic));
+  const cCards = () => CARDS.filter((c) => cTopics().includes(c.topic));
+  const lessonNo = (l) => cLessons().indexOf(l) + (course().parts.includes(0) ? 0 : 1);
+  const setCourse = (k) => { if (Store.data.course !== k) { Store.data.course = k; Store.save(); } };
 
   const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const srcTag = (s) => (s === 'notes' ? '<span class="src">z notatek</span>' : s === 'add' ? '<span class="src add">uzupełnienie</span>' : '');
@@ -19,22 +32,23 @@
 
   // ───────── nawigacja ─────────
   function renderNav() {
-    const doneCount = LESSONS.filter((l) => Store.data.done[l.id]).length;
-    $('#top-progress').textContent = `${doneCount}/${LESSONS.length} lekcji`;
-    let h = `<div class="nav-top">
+    const CL = cLessons(), doneCount = CL.filter((l) => Store.data.done[l.id]).length;
+    $('#top-progress').textContent = `${course().name}: ${doneCount}/${CL.length} lekcji`;
+    let h = `<div class="course-sw">${Object.entries(COURSES).map(([k, c]) => `<button class="chip ${Store.data.course === k ? 'on' : ''}" data-k="${k}">${c.icon} ${c.name}</button>`).join('')}</div><div class="nav-top">
       <a href="#/" data-r="">🏠 Start</a>
       <a href="#/quiz" data-r="quiz">✍️ Quiz</a>
-      <a href="#/maps" data-r="maps">🧠 Mapy myśli</a>
+      ${Store.data.course === 'analiza' ? '<a href="#/maps" data-r="maps">🧠 Mapy myśli</a>' : ''}
       <a href="#/cards" data-r="cards">🃏 Fiszki</a>
       <a href="#/cheat" data-r="cheat">📋 Ściągawka</a></div>`;
-    for (const part of [0, 1, 2, 3]) {
+    for (const part of course().parts) {
       h += `<h4>${PARTS[part]}</h4>`;
-      for (const l of LESSONS.filter((x) => x.part === part)) {
-        const n = LESSONS.indexOf(l);
+      for (const l of CL.filter((x) => x.part === part)) {
+        const n = lessonNo(l);
         h += `<a href="#/lesson/${l.id}" data-r="lesson/${l.id}"><span class="tick">${Store.data.done[l.id] ? '✓' : n}</span><span>${l.title}</span></a>`;
       }
     }
     $('#nav').innerHTML = h;
+    $$('.course-sw .chip').forEach((b) => b.addEventListener('click', () => { setCourse(b.dataset.k); location.hash === '#/' ? route() : (location.hash = '#/'); }));
     markActive();
   }
   function markActive() {
@@ -100,10 +114,11 @@
   function renderLesson(id) {
     const l = LESSON_BY_ID[id];
     if (!l) return renderHome();
-    const idx = LESSONS.indexOf(l), prev = LESSONS[idx - 1], next = LESSONS[idx + 1];
+    setCourse(l.part === 4 ? 'algebra' : 'analiza');
+    const CL = cLessons(), i0 = CL.indexOf(l), prev = CL[i0 - 1], next = CL[i0 + 1];
     const done = !!Store.data.done[id];
     main.innerHTML = `<article class="lesson">
-      <div class="crumb">${PARTS[l.part]} · lekcja ${idx} z ${LESSONS.length - 1}${l.pages !== '—' ? ` · notatki ${l.pages}` : ''} · ok. ${l.min} min</div>
+      <div class="crumb">${PARTS[l.part]} · lekcja ${lessonNo(l)} z ${lessonNo(CL[CL.length - 1])}${l.pages !== '—' ? ` · notatki ${l.pages}` : ''} · ok. ${l.min} min</div>
       <h1>${l.title}</h1><p class="lead">${l.lead}</p>
       ${PLAIN[id] ? `<details class="box plain" id="plain-box"${Store.data.plainClosed ? '' : ' open'}><summary>Na chłopski rozum <small>(kliknij, by zwinąć / rozwinąć)</small></summary>${PLAIN[id]}${(PLAIN_W[id] || []).map(([n, t]) => renderBlock({ t: 'widget', name: n, title: t })).join('')}</details>` : ''}
       ${l.blocks.map(renderBlock).join('')}
@@ -128,30 +143,31 @@
     return Math.round((t - n) / 86400000);
   }
   function renderHome() {
-    const done = LESSONS.filter((l) => Store.data.done[l.id]).length, pct = Math.round(100 * done / LESSONS.length);
-    const nextL = LESSONS.find((l) => !Store.data.done[l.id]);
-    const qs = Object.values(Store.data.q), tot = qs.reduce((s, x) => s + x.ok + x.bad, 0), ok = qs.reduce((s, x) => s + x.ok, 0);
-    const known = Object.values(Store.data.c).filter((v) => v === 'know').length;
-    const d = daysTo(Store.data.kol), dt = new Date(Store.data.kol + 'T00:00:00');
+    const CL = cLessons(), C = course(), CC = cCards();
+    const done = CL.filter((l) => Store.data.done[l.id]).length, pct = Math.round(100 * done / CL.length);
+    const nextL = CL.find((l) => !Store.data.done[l.id]);
+    const qs = cQuestions().map((q) => Store.data.q[q.id]).filter(Boolean), tot = qs.reduce((s, x) => s + x.ok + x.bad, 0), ok = qs.reduce((s, x) => s + x.ok, 0);
+    const known = CC.filter((c) => Store.data.c[c.id] === 'know').length;
+    const dk = C.dateKey, d = daysTo(Store.data[dk]), dt = new Date(Store.data[dk] + 'T00:00:00');
     const dateTxt = dt.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' });
     main.innerHTML = `
       <div class="hero"><div>
-        <div class="crumb">Analiza matematyczna</div>
-        <h1>Granice i ciągłość</h1>
-        <p class="lead">Twoje notatki z wykładu (40 stron) jako kurs: wyjaśnienia, interaktywne wykresy, quiz i fiszki.</p>
+        <div class="crumb">${C.name}</div>
+        <h1>${C.h1}</h1>
+        <p class="lead">${C.lead}</p>
         ${nextL ? `<a class="btn" href="#/lesson/${nextL.id}">${done ? 'Kontynuuj' : 'Zacznij'}: ${nextL.title} ▸</a>` : `<a class="btn" href="#/quiz">Wszystko przerobione — quiz! ▸</a>`}
       </div>
       <div class="card" style="min-width:260px">
-        <div style="font-size:.8rem;color:var(--muted)">Kolokwium (z notatek)</div>
+        <div style="font-size:.8rem;color:var(--muted)">${C.dateLbl}</div>
         <div style="font-size:1.5rem;font-weight:700">${d >= 0 ? `za ${d} ${d === 1 ? 'dzień' : 'dni'}` : 'już było'}</div>
         <div style="color:var(--muted);margin-bottom:6px">${dateTxt}</div>
-        <label style="font-size:.85rem;color:var(--muted)">zmień datę: <input type="date" id="kol" value="${Store.data.kol}"></label>
+        <label style="font-size:.85rem;color:var(--muted)">zmień datę: <input type="date" id="kol" value="${Store.data[dk]}"></label>
       </div></div>
 
       <div class="stats">
-        <div class="stat"><b>${done}/${LESSONS.length}</b><span>lekcji zrozumianych</span><div class="bar" style="margin-top:8px"><i style="width:${pct}%"></i></div></div>
+        <div class="stat"><b>${done}/${CL.length}</b><span>lekcji zrozumianych</span><div class="bar" style="margin-top:8px"><i style="width:${pct}%"></i></div></div>
         <div class="stat"><b>${tot ? Math.round(100 * ok / tot) + '%' : '—'}</b><span>poprawnych w quizie (${tot} odp.)</span></div>
-        <div class="stat"><b>${known}/${CARDS.length}</b><span>fiszek „umiem”</span></div>
+        <div class="stat"><b>${known}/${CC.length}</b><span>fiszek „umiem”</span></div>
       </div>
 
       <h2>Jak z tego korzystać</h2>
@@ -162,23 +178,24 @@
         <li>Na koniec: <a href="#/cards">fiszki</a> na definicje i <a href="#/quiz">quiz</a> — błędne pytania zapamiętuję i możesz je powtórzyć.</li>
       </ol>
 
-      ${[0, 1, 2, 3].map((p) => `<h2>${PARTS[p]}</h2><div class="grid">${LESSONS.filter((l) => l.part === p).map((l) => `
-        <a class="tile ${Store.data.done[l.id] ? 'done' : ''}" href="#/lesson/${l.id}"><div class="n">Lekcja ${LESSONS.indexOf(l)} · ${l.min} min</div><div class="t">${l.title}</div><div class="d">${l.lead}</div></a>`).join('')}</div>`).join('')}`;
+      ${C.parts.map((p) => `<h2>${PARTS[p]}</h2><div class="grid">${CL.filter((l) => l.part === p).map((l) => `
+        <a class="tile ${Store.data.done[l.id] ? 'done' : ''}" href="#/lesson/${l.id}"><div class="n">Lekcja ${lessonNo(l)} · ${l.min} min</div><div class="t">${l.title}</div><div class="d">${l.lead}</div></a>`).join('')}</div>`).join('')}`;
     typeset(main);
-    $('#kol').addEventListener('change', (e) => { if (e.target.value) { Store.data.kol = e.target.value; Store.save(); renderHome(); } });
+    $('#kol').addEventListener('change', (e) => { if (e.target.value) { Store.data[dk] = e.target.value; Store.save(); renderHome(); } });
   }
 
   // ───────── quiz ─────────
   const quiz = { topic: 'Wszystko', n: 10, list: [], i: 0, score: 0, answered: false, log: [] };
 
-  function wrongIds() { return QUESTIONS.filter((q) => Store.data.q[q.id] && Store.data.q[q.id].last === false); }
+  function wrongIds() { return cQuestions().filter((q) => Store.data.q[q.id] && Store.data.q[q.id].last === false); }
 
   function renderQuiz() {
+    if (!['Wszystko', 'Moje błędy', ...cTopics()].includes(quiz.topic)) quiz.topic = 'Wszystko';
     quiz.list = []; quiz.i = 0;
     const wrong = wrongIds().length;
-    const topics = ['Wszystko', ...TOPICS, 'Moje błędy'];
+    const topics = ['Wszystko', ...cTopics(), 'Moje błędy'];
     main.innerHTML = `<div class="crumb">Quiz</div><h1>Sprawdź, ile umiesz</h1>
-      <p class="lead">${QUESTIONS.length} pytań z całego materiału. Po każdej odpowiedzi dostajesz wyjaśnienie i odnośnik do lekcji.</p>
+      <p class="lead">${cQuestions().length} pytań z całego materiału (${course().name}). Po każdej odpowiedzi dostajesz wyjaśnienie i odnośnik do lekcji.</p>
       <div class="card">
         <b>Zakres</b>
         <div class="chips" id="q-topics">${topics.map((t) => `<button class="chip ${quiz.topic === t ? 'on' : ''}" data-t="${t}">${t}${t === 'Moje błędy' ? ` (${wrong})` : ''}</button>`).join('')}</div>
@@ -192,8 +209,8 @@
   }
 
   function startQuiz() {
-    let pool = QUESTIONS;
-    if (quiz.topic === 'Moje błędy') pool = QUESTIONS.filter((q) => wrongIds().includes(q.id));
+    let pool = cQuestions();
+    if (quiz.topic === 'Moje błędy') pool = QUESTIONS.filter((q) => wrongIds().includes(q));
     else if (quiz.topic !== 'Wszystko') pool = QUESTIONS.filter((q) => q.topic === quiz.topic);
     if (!pool.length) { main.insertAdjacentHTML('beforeend', '<p class="readout">Brak pytań w tym zakresie — super! 🎉</p>'); return; }
     pool = shuffle(pool);
@@ -237,7 +254,7 @@
   function showResult() {
     const total = quiz.list.length, pct = Math.round(100 * quiz.score / total);
     const wrong = quiz.log.filter((x) => !x.ok);
-    const byTopic = TOPICS.map((t) => { const a = quiz.log.filter((x) => x.q.topic === t); return a.length ? `<tr><td>${t}</td><td>${a.filter((x) => x.ok).length} / ${a.length}</td></tr>` : ''; }).join('');
+    const byTopic = cTopics().map((t) => { const a = quiz.log.filter((x) => x.q.topic === t); return a.length ? `<tr><td>${t}</td><td>${a.filter((x) => x.ok).length} / ${a.length}</td></tr>` : ''; }).join('');
     main.innerHTML = `<div class="crumb">Quiz · wynik</div><h1>${quiz.score} / ${total} <small style="color:var(--muted);font-weight:400">(${pct}%)</small></h1>
       <p class="lead">${pct >= 90 ? 'Świetnie! Materiał siedzi.' : pct >= 70 ? 'Dobrze — wróć do pytań, które się nie udały.' : 'Jest nad czym popracować — wróć do lekcji podlinkowanych poniżej i spróbuj jeszcze raz.'}</p>
       <div class="scroll-x"><table class="t" style="max-width:380px"><tr><th>Temat</th><th>Poprawnie</th></tr>${byTopic}</table></div>
@@ -252,18 +269,19 @@
   // ───────── fiszki ─────────
   const fc = { topic: 'Wszystko', deck: [], flipped: false, seen: 0, total: 0 };
   function renderCards() {
-    const learn = CARDS.filter((c) => Store.data.c[c.id] === 'learn').length;
-    const topics = ['Wszystko', ...TOPICS, 'Jeszcze nie umiem'];
+    if (!['Wszystko', 'Jeszcze nie umiem', ...cTopics()].includes(fc.topic)) fc.topic = 'Wszystko';
+    const learn = cCards().filter((c) => Store.data.c[c.id] === 'learn').length;
+    const topics = ['Wszystko', ...cTopics(), 'Jeszcze nie umiem'];
     main.innerHTML = `<div class="crumb">Fiszki</div><h1>Definicje i twierdzenia</h1>
-      <p class="lead">${CARDS.length} fiszek. Spróbuj odpowiedzieć na głos, zanim odwrócisz kartę (klik lub spacja).</p>
+      <p class="lead">${cCards().length} fiszek. Spróbuj odpowiedzieć na głos, zanim odwrócisz kartę (klik lub spacja).</p>
       <div class="chips">${topics.map((t) => `<button class="chip ${fc.topic === t ? 'on' : ''}" data-t="${t}">${t}${t === 'Jeszcze nie umiem' ? ` (${learn})` : ''}</button>`).join('')}</div>
       <p><button class="btn" id="fc-start">Start ▸</button></p>`;
     $$('.chip', main).forEach((c) => c.addEventListener('click', () => { fc.topic = c.dataset.t; renderCards(); }));
     $('#fc-start').addEventListener('click', startCards);
   }
   function startCards() {
-    let pool = CARDS;
-    if (fc.topic === 'Jeszcze nie umiem') pool = CARDS.filter((c) => Store.data.c[c.id] === 'learn' || !Store.data.c[c.id]);
+    let pool = cCards();
+    if (fc.topic === 'Jeszcze nie umiem') pool = cCards().filter((c) => Store.data.c[c.id] === 'learn' || !Store.data.c[c.id]);
     else if (fc.topic !== 'Wszystko') pool = CARDS.filter((c) => c.topic === fc.topic);
     fc.deck = shuffle(pool); fc.total = fc.deck.length; fc.done = 0; fc.flipped = false;
     showCard();
@@ -304,7 +322,7 @@
   function renderCheat() {
     main.innerHTML = `<div class="crumb">Ściągawka</div><h1>Wszystko na jednej stronie</h1>
       <p class="lead">Definicje i twierdzenia z fiszek, pogrupowane tematycznie. Do powtórki tuż przed kolokwium.</p>
-      <div class="cheat">${TOPICS.map((t) => `<h3>${t}</h3>${CARDS.filter((c) => c.topic === t).map((c) => `<div class="row"><div class="k">${c.f}</div><div>${c.b} <a href="#/lesson/${c.lesson}">→ lekcja</a></div></div>`).join('')}`).join('')}</div>`;
+      <div class="cheat">${cTopics().map((t) => `<h3>${t}</h3>${CARDS.filter((c) => c.topic === t).map((c) => `<div class="row"><div class="k">${c.f}</div><div>${c.b} <a href="#/lesson/${c.lesson}">→ lekcja</a></div></div>`).join('')}`).join('')}</div>`;
     typeset(main);
   }
 
