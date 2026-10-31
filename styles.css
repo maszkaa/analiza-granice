@@ -246,5 +246,5 @@ table.t td:first-child, table.t th:first-child { text-align: left; }
 }
 .top-right { display: flex; align-items: center; gap: 10px; }
 .theme-sel { font: inherit; font-size: .85rem; padding: 3px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); cursor: pointer; }
-:root[data-theme="pink"] .brand { font-family: 'Pinyon Script', 'Snell Roundhand', 'Brush Script MT', cursive; font-size: 1.9rem; font-weight: 400; line-height: 1; }
+:root[data-theme="pink"] .brand { font-family: 'Pinyon Script', 'Snell Roundhand', 'Brush Script MT', cursive; font-size: 2rem; font-weight: 400; line-height: 1; -webkit-text-stroke: .9px currentColor; letter-spacing: .01em; }
 :root[data-theme="pink"] .brand span { font-family: system-ui, sans-serif; font-size: .9rem; }

@@ -15,8 +15,8 @@
 
   // dwa osobne kursy: każdy ma własne lekcje, quiz, fiszki, ściągawkę i termin
   const COURSES = {
-    analiza: { name: 'Analiza', icon: '📈', parts: [0, 1, 2, 3], topics: ['Ciągi', 'Granice funkcji', 'Ciągłość'], h1: 'Granice i ciągłość', lead: 'Twoje notatki z wykładu (40 stron) jako kurs: wyjaśnienia, interaktywne wykresy, quiz i fiszki.', dateKey: 'kol', dateLbl: 'Kolokwium (z notatek)' },
-    algebra: { name: 'Algebra', icon: '🧮', parts: [4], topics: ['Logika i zbiory', 'Kresy zbiorów', 'Wyrażenia algebraiczne'], h1: 'Logika, zbiory, kresy, wyrażenia', lead: 'Materiały na kartkówkę: logika, zbiory, kresy zbiorów i wyrażenia algebraiczne — z rozpisanymi przykładami, quizem i fiszkami.', dateKey: 'kolA', dateLbl: 'Kartkówka' },
+    analiza: { name: 'Analiza', sub: 'granice i ciągłość', icon: '📈', parts: [0, 1, 2, 3], topics: ['Ciągi', 'Granice funkcji', 'Ciągłość'], h1: 'Granice i ciągłość', lead: 'Twoje notatki z wykładu (40 stron) jako kurs: wyjaśnienia, interaktywne wykresy, quiz i fiszki.', dateKey: 'kol', dateLbl: 'Kolokwium (z notatek)' },
+    algebra: { name: 'Algebra', sub: 'logika, zbiory, kresy', icon: '🧮', parts: [4], topics: ['Logika i zbiory', 'Kresy zbiorów', 'Wyrażenia algebraiczne'], h1: 'Logika, zbiory, kresy, wyrażenia', lead: 'Materiały na kartkówkę: logika, zbiory, kresy zbiorów i wyrażenia algebraiczne — z rozpisanymi przykładami, quizem i fiszkami.', dateKey: 'kolA', dateLbl: 'Kartkówka' },
   };
   const course = () => COURSES[Store.data.course] || COURSES.analiza;
   const cLessons = () => LESSONS.filter((l) => course().parts.includes(l.part));
@@ -34,6 +34,7 @@
   function renderNav() {
     const CL = cLessons(), doneCount = CL.filter((l) => Store.data.done[l.id]).length;
     $('#top-progress').textContent = `${course().name}: ${doneCount}/${CL.length} lekcji`;
+    $('.brand').innerHTML = `${course().name}<span>${course().sub}</span>`;
     let h = `<div class="course-sw">${Object.entries(COURSES).map(([k, c]) => `<button class="chip ${Store.data.course === k ? 'on' : ''}" data-k="${k}">${c.icon} ${c.name}</button>`).join('')}</div><div class="nav-top">
       <a href="#/" data-r="">🏠 Start</a>
       <a href="#/quiz" data-r="quiz">✍️ Quiz</a>
